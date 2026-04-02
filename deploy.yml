@@ -1,0 +1,44 @@
+---
+# Simple Ansible Playbook to Deploy Node.js App on EC2
+# Run: ansible-playbook deploy.yml
+
+- name: Deploy Node.js App
+  hosts: ec2
+  become: true
+
+  vars:
+    repo_url: "https://github.com/justicesecops-10/git.git"
+    app_dir: "/opt/myapp"
+    app_port: 3000
+
+  tasks:
+
+    - name: Install Node.js and Git
+      apt:
+        name:
+          - nodejs
+          - npm
+          - git
+        state: present
+        update_cache: true
+
+    - name: Clone the GitHub repo
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_dir }}"
+        version: main
+        force: true
+
+    - name: Install npm packages
+      npm:
+        path: "{{ app_dir }}"
+        state: present
+
+    - name: Install PM2 (keeps app running)
+      npm:
+        name: pm2
+        global: true
+
+    - name: Start the app with PM2
+      command: pm2 start {{ app_dir }}/server.js --name myapp
+      ignore_errors: true
